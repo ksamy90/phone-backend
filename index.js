@@ -2,12 +2,12 @@ const express = require("express");
 const morgan = require("morgan");
 const app = express();
 
+// https://stackoverflow.com/questions/51409771/logging-post-body-size-using-morgan-when-request-is-received
+
 app.use(express.json());
 morgan.token("body", (req, res) => JSON.stringify(req.body));
 app.use(
-  morgan(
-    ":method :url :status :response-time ms - :res[content-length] :body - :req[content-length]"
-  )
+  morgan(":method :url :status :response-time ms - :res[content-length] :body")
 );
 
 let phonelist = [
