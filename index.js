@@ -1,10 +1,13 @@
 const express = require("express");
 const morgan = require("morgan");
+const cors = require("cors");
 const app = express();
 
 // https://stackoverflow.com/questions/51409771/logging-post-body-size-using-morgan-when-request-is-received
 
 app.use(express.json());
+app.use(cors());
+app.use(express.static("build"));
 morgan.token("body", (req, res) => JSON.stringify(req.body));
 app.use(
   morgan(":method :url :status :response-time ms - :res[content-length] :body")
