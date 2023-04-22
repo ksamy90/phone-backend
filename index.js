@@ -1,6 +1,8 @@
+require("dotenv").config();
 const express = require("express");
 const morgan = require("morgan");
 const cors = require("cors");
+const Phone = require("./models/phone");
 const app = express();
 
 // https://stackoverflow.com/questions/51409771/logging-post-body-size-using-morgan-when-request-is-received
@@ -13,35 +15,22 @@ app.use(
   morgan(":method :url :status :response-time ms - :res[content-length] :body")
 );
 
-let phonelist = [
-  {
-    id: 1,
-    name: "Arto Hellas",
-    number: "040-123456",
-  },
-  {
-    id: 2,
-    name: "Ada Lovelace",
-    number: "39-44-5323523",
-  },
-  {
-    id: 3,
-    name: "Dan Abramov",
-    number: "12-43-234345",
-  },
-  {
-    id: 4,
-    name: "Mary Poppendieck",
-    number: "39-23-6423122",
-  },
-];
-
 app.get("/", (request, response) => {
   response.send("<h1>Phone Application</h1>");
 });
 
+let phonelist;
+Phone.find({})
+  .then((docs) => {
+    phonelist = docs;
+  })
+  .catch((err) => {
+    console.log(err);
+  });
 app.get("/api/persons", (request, response) => {
-  response.json(phonelist);
+  Phone.find({}).then((phones) => {
+    response.json(phones);
+  });
 });
 
 app.get("/api/persons/:id", (request, response) => {
@@ -68,11 +57,10 @@ app.get("/info", (request, response) => {
     `<p>Phonebook has info for ${numpersons} people</p><p>${timeNow}</p>`
   );
 });
+setTimeout(() => {
+  console.log(phonelist);
+}, 6000);
 
-const generateId = () => {
-  const newId = Math.floor(Math.random() * 145);
-  return newId + 3;
-};
 const userExists = (name) => {
   return phonelist.some((person) => {
     return person.name === name;
@@ -80,7 +68,7 @@ const userExists = (name) => {
 };
 app.post("/api/persons", (request, response) => {
   const body = request.body;
-  if (!body.number || !body.name) {
+  if (body.number === undefined || body.name === undefined) {
     return response.status(400).json({
       error: "number and/or name missing",
     });
@@ -91,16 +79,16 @@ app.post("/api/persons", (request, response) => {
     });
   }
 
-  const person = {
+  const person = new Phone({
     name: body.name,
     number: body.number,
-    id: generateId(),
-  };
-  phonelist = [...phonelist, person];
-  response.json(person);
+  });
+  person.save().then((savedPerson) => {
+    response.json(savedPerson);
+  });
 });
 
-const PORT = 3001;
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`server running on port ${PORT}`);
 });
