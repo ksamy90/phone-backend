@@ -39,19 +39,38 @@ app.get("/api/persons/:id", (request, response) => {
   });
 });
 
-app.delete("/api/persons/:id", (request, response) => {
-  const id = Number(request.params.id);
-  phonelist = phonelist.filter((phone) => phone.id !== id);
+app.delete("/api/persons/:id", (request, response, next) => {
+  Phone.findByIdAndRemove(request.params.id)
+    .then((result) => {
+      response.status(204).end();
+    })
+    .catch((error) => next(error));
+});
 
-  response.status(204).end();
+app.put("/api/persons/:id", (request, response, next) => {
+  const body = request.body;
+
+  const person = {
+    name: body.name,
+    number: body.number,
+  };
+
+  Phone.findByIdAndUpdate(request.params.id, person, { new: true })
+    .then((updatedPerson) => {
+      response.json(updatedPerson);
+    })
+    .catch((error) => next(error));
 });
 
 app.get("/info", (request, response) => {
-  const numpersons = phonelist.length;
   const timeNow = new Date();
-  response.send(
-    `<p>Phonebook has info for ${numpersons} people</p><p>${timeNow}</p>`
-  );
+  Phone.find({})
+    .then((phones) => {
+      response.send(
+        `<p>Phonebook has info for ${phones.length} people</p><p>${timeNow}</p>`
+      );
+    })
+    .catch((error) => next(error));
 });
 setTimeout(() => {
   console.log(phonelist);
@@ -83,6 +102,15 @@ app.post("/api/persons", (request, response) => {
     response.json(savedPerson);
   });
 });
+
+const errorHandler = (error, request, response, next) => {
+  console.log(error.message);
+  if (error.name === "CastError") {
+    return response.status(400).send({ error: "malformed id" });
+  }
+  next(error);
+};
+app.use(errorHandler);
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => {
